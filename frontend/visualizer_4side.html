@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMR 4-Side Industrial Inspection</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e27;
+            color: white;
+            overflow: hidden;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            grid-template-rows: 70px 1fr;
+            height: 100vh;
+        }
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .header h1 { font-size: 22px; font-weight: 600; }
+        .header-info { font-size: 13px; opacity: 0.9; }
+        .btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }
+        .btn-primary { background: white; color: #667eea; }
+        .btn-primary:hover { background: #f0f0f0; transform: translateY(-2px); }
+        .btn-secondary { background: rgba(255,255,255,0.2); color: white; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        #canvas3d { width: 100%; height: 100%; display: block; background: #0a0e27; }
+        
+        .sidebar {
+            background: #1a1f3a;
+            overflow-y: auto;
+            padding: 20px;
+            border-left: 2px solid #2d3748;
+        }
+        .panel {
+            background: #0f1729;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 18px;
+            border: 1px solid #2d3748;
+        }
+        .panel h3 {
+            font-size: 13px;
+            margin-bottom: 15px;
+            color: #a0aec0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        .side-indicator {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .side-box {
+            background: #1a1f3a;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #2d3748;
+            transition: all 0.3s;
+        }
+        .side-box.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+        }
+        .side-box.completed {
+            border-color: #48bb78;
+            background: rgba(72, 187, 120, 0.1);
+        }
+        .side-label { font-size: 11px; color: #a0aec0; margin-bottom: 5px; }
+        .side-name { font-size: 14px; font-weight: 600; color: white; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: #1a1f3a;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 10px;
+            border: 1px solid #2d3748;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .status-box {
+            background: #1a1f3a;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 10px;
+            border: 1px solid #2d3748;
+        }
+        .status-box .label {
+            color: #a0aec0;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .status-box .value {
+            color: white;
+            font-weight: 600;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        .camera-views {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .camera-box {
+            background: #1a1f3a;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 2px solid #2d3748;
+            transition: all 0.3s;
+        }
+        .camera-box.active {
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+        .camera-icon {
+            width: 30px;
+            height: 30px;
+            margin: 0 auto 5px;
+            background: #2d3748;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        .camera-label { font-size: 10px; color: #a0aec0; }
+        
+        .results-summary {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .result-item {
+            background: #1a1f3a;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            border-left: 3px solid #667eea;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .result-side { color: #667eea; font-weight: 600; }
+        .result-height { color: #a0aec0; font-size: 11px; }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .badge-success { background: #48bb78; color: white; }
+        .badge-warning { background: #ed8936; color: white; }
+        .badge-danger { background: #f56565; color: white; }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: block;
+            font-size: 11px;
+            color: #a0aec0;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #1a1f3a;
+            border: 1px solid #2d3748;
+            border-radius: 6px;
+            color: white;
+            font-size: 13px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🤖 AMR 4-Side Industrial Inspection System</h1>
+                <div class="header-info">Real-time 3D Visualization | Multi-Side Scanning | AI Detection</div>
+            </div>
+            <div>
+                <button class="btn btn-primary" id="startScanBtn">Start 4-Side Scan</button>
+                <button class="btn btn-secondary" id="resetBtn">Reset</button>
+            </div>
+        </div>
+        
+        <div>
+            <canvas id="canvas3d"></canvas>
+        </div>
+        
+        <div class="sidebar">
+            <div class="panel">
+                <h3>Scan Configuration</h3>
+                <div class="control-group">
+                    <label>Camera Mode</label>
+                    <select id="cameraMode">
+                        <option value="crop">Crop Mode (Realistic)</option>
+                        <option value="random">Random Mode (Fast)</option>
+                    </select>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="fourSideMode" checked>
+                    <label for="fourSideMode" style="margin: 0;">Enable 4-Side Scanning</label>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>Current Side</h3>
+                <div class="side-indicator">
+                    <div class="side-box" id="side1">
+                        <div class="side-label">SIDE 1</div>
+                        <div class="side-name">Front</div>
+                    </div>
+                    <div class="side-box" id="side2">
+                        <div class="side-label">SIDE 2</div>
+                        <div class="side-name">Right</div>
+                    </div>
+                    <div class="side-box" id="side3">
+                        <div class="side-label">SIDE 3</div>
+                        <div class="side-name">Back</div>
+                    </div>
+                    <div class="side-box" id="side4">
+                        <div class="side-label">SIDE 4</div>
+                        <div class="side-name">Left</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>Scan Progress</h3>
+                <div class="status-box">
+                    <div class="label">Status</div>
+                    <div class="value" id="statusText">Ready to scan</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+                </div>
+                <div class="status-box">
+                    <div class="label">Progress</div>
+                    <div class="value" id="progressText">0 / 32 scans</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>Camera Status</h3>
+                <div class="camera-views">
+                    <div class="camera-box" id="camLeft">
+                        <div class="camera-icon">📷</div>
+                        <div class="camera-label">Left</div>
+                    </div>
+                    <div class="camera-box" id="camCenter">
+                        <div class="camera-icon">📷</div>
+                        <div class="camera-label">Center</div>
+                    </div>
+                    <div class="camera-box" id="camRight">
+                        <div class="camera-icon">📷</div>
+                        <div class="camera-label">Right</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>Scan Results</h3>
+                <div class="results-summary" id="resultsList">
+                    <p style="color: #a0aec0; text-align: center; font-size: 12px; padding: 20px;">
+                        No results yet. Start a scan to see data.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, amrGroup, liftGroup, bracketGroup, targetBox;
+        let cameras3D = [];
+        let isScanning = false;
+        let scanHeights = [0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1, 2.3];
+        let sides = [
+            {num: 1, name: "Front", position: {x: 0, z: 3}, rotation: 0},
+            {num: 2, name: "Right", position: {x: 3, z: 0}, rotation: -Math.PI/2},
+            {num: 3, name: "Back", position: {x: 0, z: -3}, rotation: Math.PI},
+            {num: 4, name: "Left", position: {x: -3, z: 0}, rotation: Math.PI/2}
+        ];
+        let currentSideIndex = 0;
+        let currentHeightIndex = 0;
+        let scanResults = [];
+        let completedSides = [];
+        const API_BASE = 'http://localhost:8000';
+        
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e27);
+            scene.fog = new THREE.Fog(0x0a0e27, 15, 40);
+            
+            // Fixed camera position - no rotation
+            camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+            camera.position.set(8, 6, 8);
+            camera.lookAt(0, 1, 0);
+            
+            const canvas = document.getElementById('canvas3d');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 15, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.left = -10;
+            directionalLight.shadow.camera.right = 10;
+            directionalLight.shadow.camera.top = 10;
+            directionalLight.shadow.camera.bottom = -10;
+            scene.add(directionalLight);
+            
+            // Accent lights
+            const light1 = new THREE.PointLight(0x667eea, 0.8, 20);
+            light1.position.set(-5, 3, -5);
+            scene.add(light1);
+            
+            const light2 = new THREE.PointLight(0x764ba2, 0.8, 20);
+            light2.position.set(5, 3, 5);
+            scene.add(light2);
+            
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1f3a,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // Grid
+            const gridHelper = new THREE.GridHelper(20, 20, 0x2d3748, 0x1a1f3a);
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+            
+            // Inspection Target (center box)
+            const targetGeometry = new THREE.BoxGeometry(2, 2.5, 2);
+            const targetMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x4a5568,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            targetBox = new THREE.Mesh(targetGeometry, targetMaterial);
+            targetBox.position.set(0, 1.25, 0);
+            targetBox.castShadow = true;
+            targetBox.receiveShadow = true;
+            scene.add(targetBox);
+            
+            // Add edges to target
+            const edges = new THREE.EdgesGeometry(targetGeometry);
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0x667eea, linewidth: 2 });
+            const wireframe = new THREE.LineSegments(edges, lineMaterial);
+            targetBox.add(wireframe);
+            
+            // Create AMR
+            createAMR();
+            
+            // Position AMR at first side
+            updateAMRPosition(sides[0]);
+            
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('startScanBtn').addEventListener('click', startScan);
+            document.getElementById('resetBtn').addEventListener('click', resetPosition);
+            
+            animate();
+        }
+        
+        function createAMR() {
+            amrGroup = new THREE.Group();
+            
+            // Base
+            const baseGeometry = new THREE.BoxGeometry(0.8, 0.15, 0.6);
+            const baseMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x4299e1,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x4299e1,
+                emissiveIntensity: 0.2
+            });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.castShadow = true;
+            amrGroup.add(base);
+            
+            // Wheels
+            const wheelGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.04, 16);
+            const wheelMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x2d3748,
+                metalness: 0.9,
+                roughness: 0.2
+            });
+            
+            [[-0.3, -0.08, 0.25], [0.3, -0.08, 0.25], [-0.3, -0.08, -0.25], [0.3, -0.08, -0.25]].forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(...pos);
+                wheel.castShadow = true;
+                amrGroup.add(wheel);
+            });
+            
+            // Lift column
+            liftGroup = new THREE.Group();
+            liftGroup.position.y = 0.08;
+            
+            const columnGeometry = new THREE.BoxGeometry(0.12, 2.5, 0.12);
+            const columnMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x48bb78,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0x48bb78,
+                emissiveIntensity: 0.1
+            });
+            const column = new THREE.Mesh(columnGeometry, columnMaterial);
+            column.position.y = 1.25;
+            column.castShadow = true;
+            liftGroup.add(column);
+            
+            // Camera bracket
+            bracketGroup = new THREE.Group();
+            bracketGroup.position.y = 0.3;
+            
+            const armGeometry = new THREE.BoxGeometry(1.0, 0.08, 0.25);
+            const armMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xed8936,
+                metalness: 0.6,
+                roughness: 0.4,
+                emissive: 0xed8936,
+                emissiveIntensity: 0.15
+            });
+            const arm = new THREE.Mesh(armGeometry, armMaterial);
+            arm.castShadow = true;
+            bracketGroup.add(arm);
+            
+            // 3 Cameras
+            const cameraGeometry = new THREE.BoxGeometry(0.12, 0.12, 0.15);
+            const cameraMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x9f7aea,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x9f7aea,
+                emissiveIntensity: 0.2
+            });
+            
+            [-0.35, 0, 0.35].forEach((xPos, idx) => {
+                const cam = new THREE.Mesh(cameraGeometry, cameraMaterial);
+                cam.position.set(xPos, -0.12, 0.15);
+                cam.castShadow = true;
+                
+                // Lens
+                const lensGeometry = new THREE.CircleGeometry(0.04, 16);
+                const lensMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x00ffff,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                const lens = new THREE.Mesh(lensGeometry, lensMaterial);
+                lens.position.z = 0.08;
+                cam.add(lens);
+                
+                // Camera light
+                const light = new THREE.PointLight(0x00ffff, 0, 1.5);
+                light.position.z = 0.2;
+                cam.add(light);
+                cam.userData.light = light;
+                cam.userData.lens = lens;
+                
+                bracketGroup.add(cam);
+                cameras3D.push(cam);
+            });
+            
+            liftGroup.add(bracketGroup);
+            amrGroup.add(liftGroup);
+            amrGroup.position.y = 0.08;
+            scene.add(amrGroup);
+        }
+        
+        function updateAMRPosition(side) {
+            amrGroup.position.x = side.position.x;
+            amrGroup.position.z = side.position.z;
+            amrGroup.rotation.y = side.rotation;
+        }
+        
+        function resetPosition() {
+            currentSideIndex = 0;
+            currentHeightIndex = 0;
+            bracketGroup.position.y = 0.3;
+            updateAMRPosition(sides[0]);
+            scanResults = [];
+            completedSides = [];
+            updateResultsList();
+            updateSideIndicators();
+            updateStatus('Reset to initial position');
+            updateProgress(0, 32);
+        }
+        
+        async function startScan() {
+            if (isScanning) return;
+            
+            const fourSideMode = document.getElementById('fourSideMode').checked;
+            const cameraMode = document.getElementById('cameraMode').value;
+            
+            isScanning = true;
+            currentSideIndex = 0;
+            currentHeightIndex = 0;
+            scanResults = [];
+            completedSides = [];
+            document.getElementById('startScanBtn').disabled = true;
+            updateStatus('Initializing scan...');
+            
+            try {
+                await fetch(`${API_BASE}/scan/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        amr_x: 0, 
+                        camera_mode: cameraMode,
+                        four_side_scan: fourSideMode
+                    })
+                });
+            } catch (error) {
+                console.log('Backend offline - visual simulation only');
+            }
+            
+            if (fourSideMode) {
+                animateFourSideScan();
+            } else {
+                animateSingleSideScan();
+            }
+        }
+        
+        async function animateFourSideScan() {
+            const totalScans = sides.length * scanHeights.length;
+            let scanCount = 0;
+            
+            for (let sideIdx = 0; sideIdx < sides.length; sideIdx++) {
+                currentSideIndex = sideIdx;
+                const side = sides[sideIdx];
+                
+                updateSideIndicators();
+                updateStatus(`Moving to ${side.name} side...`);
+                
+                await animateAMRToSide(side);
+                
+                for (let heightIdx = 0; heightIdx < scanHeights.length; heightIdx++) {
+                    currentHeightIndex = heightIdx;
+                    const height = scanHeights[heightIdx];
+                    
+                    updateStatus(`Side ${side.num} - Moving to ${height.toFixed(1)}m`);
+                    await animateLiftTo(height);
+                    
+                    updateStatus(`Side ${side.num} - Stabilizing...`);
+                    await sleep(300);
+                    
+                    updateStatus(`Side ${side.num} - Capturing images...`);
+                    flashCameras();
+                    await sleep(400);
+                    
+                    updateStatus(`Side ${side.num} - AI detection...`);
+                    const detections = Math.floor(Math.random() * 10);
+                    scanResults.push({
+                        side: side.num,
+                        sideName: side.name,
+                        height: height,
+                        detections: detections
+                    });
+                    updateResultsList();
+                    
+                    scanCount++;
+                    updateProgress(scanCount, totalScans);
+                    document.getElementById('progressText').textContent = `${scanCount} / ${totalScans} scans`;
+                    
+                    await sleep(200);
+                }
+                
+                completedSides.push(side.num);
+                updateSideIndicators();
+                updateStatus(`Side ${side.num} complete!`);
+                await sleep(500);
+            }
+            
+            isScanning = false;
+            document.getElementById('startScanBtn').disabled = false;
+            updateStatus('✓ 4-side scan complete!');
+        }
+        
+        async function animateSingleSideScan() {
+            const side = sides[0];
+            updateSideIndicators();
+            
+            for (let heightIdx = 0; heightIdx < scanHeights.length; heightIdx++) {
+                const height = scanHeights[heightIdx];
+                
+                updateStatus(`Moving to ${height.toFixed(1)}m`);
+                await animateLiftTo(height);
+                
+                updateStatus('Stabilizing...');
+                await sleep(300);
+                
+                updateStatus('Capturing images...');
+                flashCameras();
+                await sleep(400);
+                
+                updateStatus('AI detection...');
+                const detections = Math.floor(Math.random() * 10);
+                scanResults.push({
+                    side: 1,
+                    sideName: 'Front',
+                    height: height,
+                    detections: detections
+                });
+                updateResultsList();
+                
+                updateProgress(heightIdx + 1, scanHeights.length);
+                document.getElementById('progressText').textContent = `${heightIdx + 1} / ${scanHeights.length} scans`;
+                
+                await sleep(200);
+            }
+            
+            completedSides.push(1);
+            updateSideIndicators();
+            isScanning = false;
+            document.getElementById('startScanBtn').disabled = false;
+            updateStatus('✓ Scan complete!');
+        }
+        
+        function animateAMRToSide(side) {
+            return new Promise(resolve => {
+                const startPos = { x: amrGroup.position.x, z: amrGroup.position.z };
+                const startRot = amrGroup.rotation.y;
+                const duration = 1000;
+                const startTime = Date.now();
+                
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    
+                    amrGroup.position.x = startPos.x + (side.position.x - startPos.x) * eased;
+                    amrGroup.position.z = startPos.z + (side.position.z - startPos.z) * eased;
+                    
+                    let targetRot = side.rotation;
+                    let rotDiff = targetRot - startRot;
+                    while (rotDiff > Math.PI) rotDiff -= 2 * Math.PI;
+                    while (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
+                    amrGroup.rotation.y = startRot + rotDiff * eased;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        resolve();
+                    }
+                }
+                animate();
+            });
+        }
+        
+        function animateLiftTo(targetHeight) {
+            return new Promise(resolve => {
+                const startHeight = bracketGroup.position.y;
+                const duration = 500;
+                const startTime = Date.now();
+                
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    
+                    bracketGroup.position.y = startHeight + (targetHeight - startHeight) * eased;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        resolve();
+                    }
+                }
+                animate();
+            });
+        }
+        
+        function flashCameras() {
+            const cameraBoxes = ['camLeft', 'camCenter', 'camRight'];
+            cameras3D.forEach((cam, idx) => {
+                setTimeout(() => {
+                    const lens = cam.userData.lens;
+                    const light = cam.userData.light;
+                    const box = document.getElementById(cameraBoxes[idx]);
+                    
+                    lens.material.opacity = 1;
+                    lens.material.emissive = new THREE.Color(0x00ffff);
+                    lens.material.emissiveIntensity = 3;
+                    light.intensity = 5;
+                    box.classList.add('active');
+                    
+                    setTimeout(() => {
+                        lens.material.opacity = 0.6;
+                        lens.material.emissiveIntensity = 0;
+                        light.intensity = 0;
+                        box.classList.remove('active');
+                    }, 150);
+                }, idx * 120);
+            });
+        }
+        
+        function updateSideIndicators() {
+            sides.forEach(side => {
+                const box = document.getElementById(`side${side.num}`);
+                box.classList.remove('active', 'completed');
+                
+                if (completedSides.includes(side.num)) {
+                    box.classList.add('completed');
+                } else if (currentSideIndex === side.num - 1 && isScanning) {
+                    box.classList.add('active');
+                }
+            });
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('statusText').textContent = message;
+        }
+        
+        function updateProgress(current, total) {
+            const percent = (current / total) * 100;
+            const fill = document.getElementById('progressFill');
+            fill.style.width = percent + '%';
+            fill.textContent = Math.round(percent) + '%';
+        }
+        
+        function updateResultsList() {
+            const list = document.getElementById('resultsList');
+            if (scanResults.length === 0) {
+                list.innerHTML = '<p style="color: #a0aec0; text-align: center; font-size: 12px; padding: 20px;">No results yet. Start a scan to see data.</p>';
+                return;
+            }
+            
+            list.innerHTML = scanResults.slice(-10).reverse().map(r => {
+                const badge = r.detections === 0 ? 'badge-success' : 
+                             r.detections < 5 ? 'badge-warning' : 'badge-danger';
+                return `
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-side">Side ${r.side}: ${r.sideName}</span>
+                            <span class="result-height">${r.height.toFixed(1)}m</span>
+                        </div>
+                        <span class="badge ${badge}">${r.detections} detections</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        
+        function onWindowResize() {
+            const canvas = document.getElementById('canvas3d');
+            camera.aspect = canvas.clientWidth / canvas.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        }
+        
+        init();
+    </script>
+</body>
+</html>

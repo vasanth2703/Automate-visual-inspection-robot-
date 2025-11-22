@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMR Scanning Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-item label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .control-item input, .control-item select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .status-panel {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-idle { background: #e0e0e0; color: #666; }
+        .status-running { background: #4caf50; color: white; }
+        .status-complete { background: #2196f3; color: white; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-message {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .results-panel {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+        
+        .result-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+        }
+        
+        .result-card h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .result-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 14px;
+        }
+        
+        .result-stat .label {
+            color: #666;
+        }
+        
+        .result-stat .value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .defect-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #ff5722;
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+            margin: 2px;
+        }
+        
+        .no-defect {
+            background: #4caf50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AMR Scanning Simulation Dashboard</h1>
+            <p>Industrial Inspection Robot - Vertical Lift + 3-Camera System</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-item">
+                    <label>AMR Position (m)</label>
+                    <input type="number" id="amrPosition" value="0" min="0" max="2" step="0.5">
+                </div>
+                
+                <div class="control-item">
+                    <label>Camera Mode</label>
+                    <select id="cameraMode">
+                        <option value="crop">Crop Mode</option>
+                        <option value="random">Random Mode</option>
+                    </select>
+                </div>
+                
+                <div class="control-item" style="margin-top: 20px;">
+                    <button class="btn btn-primary" id="startBtn" onclick="startScan()">Start Scan</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-panel">
+            <div class="status-header">
+                <h2>Scan Status</h2>
+                <span class="status-badge status-idle" id="statusBadge">IDLE</span>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+            </div>
+            
+            <div class="status-message" id="statusMessage">Ready to start scanning</div>
+        </div>
+        
+        <div class="results-panel">
+            <h2>Scan Results</h2>
+            <div class="results-grid" id="resultsGrid">
+                <p style="color: #999; text-align: center; grid-column: 1/-1;">No results yet. Start a scan to see data.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let pollInterval = null;
+        
+        async function startScan() {
+            const amrX = parseFloat(document.getElementById('amrPosition').value);
+            const cameraMode = document.getElementById('cameraMode').value;
+            const startBtn = document.getElementById('startBtn');
+            
+            startBtn.disabled = true;
+            startBtn.textContent = 'Scanning...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/scan/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amr_x: amrX, camera_mode: cameraMode })
+                });
+                
+                const data = await response.json();
+                console.log('Scan started:', data);
+                
+                // Start polling for status
+                pollInterval = setInterval(pollStatus, 500);
+                
+            } catch (error) {
+                console.error('Error starting scan:', error);
+                alert('Failed to start scan. Make sure the backend is running.');
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Scan';
+            }
+        }
+        
+        async function pollStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/scan/status`);
+                const status = await response.json();
+                
+                updateStatusUI(status);
+                
+                if (status.state === 'complete' || status.state === 'idle') {
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                    
+                    if (status.state === 'complete') {
+                        await loadResults();
+                    }
+                    
+                    const startBtn = document.getElementById('startBtn');
+                    startBtn.disabled = false;
+                    startBtn.textContent = 'Start Scan';
+                }
+                
+            } catch (error) {
+                console.error('Error polling status:', error);
+            }
+        }
+        
+        function updateStatusUI(status) {
+            const badge = document.getElementById('statusBadge');
+            const message = document.getElementById('statusMessage');
+            const progressFill = document.getElementById('progressFill');
+            
+            // Update badge
+            badge.textContent = status.state.toUpperCase();
+            badge.className = 'status-badge';
+            
+            if (status.running) {
+                badge.classList.add('status-running');
+            } else if (status.state === 'complete') {
+                badge.classList.add('status-complete');
+            } else {
+                badge.classList.add('status-idle');
+            }
+            
+            // Update message
+            message.textContent = status.message;
+            
+            // Update progress
+            const progress = status.total_heights > 0 
+                ? (status.current_height_idx / status.total_heights) * 100 
+                : 0;
+            progressFill.style.width = `${progress}%`;
+            progressFill.textContent = `${Math.round(progress)}%`;
+        }
+        
+        async function loadResults() {
+            try {
+                const response = await fetch(`${API_BASE}/scan/results`);
+                const data = await response.json();
+                
+                displayResults(data.results);
+                
+            } catch (error) {
+                console.error('Error loading results:', error);
+            }
+        }
+        
+        function displayResults(results) {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+            
+            results.forEach(result => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                
+                const detections = result.detections;
+                const hasDefects = detections.has_defects;
+                
+                let defectBadges = '';
+                if (hasDefects) {
+                    for (const [type, count] of Object.entries(detections.defect_counts)) {
+                        defectBadges += `<span class="defect-badge">${type}: ${count}</span>`;
+                    }
+                } else {
+                    defectBadges = '<span class="defect-badge no-defect">No Defects</span>';
+                }
+                
+                card.innerHTML = `
+                    <h3>Height: ${result.height.toFixed(1)}m</h3>
+                    <div class="result-stat">
+                        <span class="label">Total Detections:</span>
+                        <span class="value">${detections.total_detections}</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="label">Timestamp:</span>
+                        <span class="value">${new Date(result.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        ${defectBadges}
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // Load initial status
+        pollStatus();
+    </script>
+</body>
+</html>
