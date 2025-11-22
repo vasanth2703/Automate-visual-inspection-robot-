@@ -1,0 +1,8 @@
+[build]
+  # No build command needed - static HTML
+  publish = "frontend"
+  
+[[redirects]]
+  from = "/*"
+  to = "/react_dashboard.html"
+  status = 200
