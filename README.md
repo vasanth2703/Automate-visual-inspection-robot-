@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🤖 YOLO + PatchCore Industrial Inspection System
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
@@ -440,3 +441,6 @@ For issues or questions:
 - Three.js for 3D visualization
 - React for dashboard UI
 - Supabase for real-time database
+=======
+# Automate-visual-inspection-robot-
+>>>>>>> f9e9c3e395dd3c9f1c6e0315f5437d409965b3a2
