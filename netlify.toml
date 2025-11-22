@@ -5,7 +5,7 @@
 
 [build.environment]
   # Disable Python dependency installation
-  PYTHON_VERSION = ""
+  PYTHON_VERSION = "3.11"
   
 [[redirects]]
   from = "/*"
