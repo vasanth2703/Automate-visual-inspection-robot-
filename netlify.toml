@@ -1,8 +1,18 @@
 [build]
-  # No build command needed - static HTML
+  command = ""
   publish = "frontend"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF ."
+
+[build.environment]
+  # Disable Python dependency installation
+  PYTHON_VERSION = ""
   
 [[redirects]]
   from = "/*"
   to = "/react_dashboard.html"
   status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"

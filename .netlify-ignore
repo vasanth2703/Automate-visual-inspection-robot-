@@ -1,0 +1,3 @@
+# Tell Netlify to ignore Python files
+requirements.txt
+*.py
